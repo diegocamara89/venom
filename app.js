@@ -1,86 +1,26 @@
-/* eslint-disable */
-const venom = require('./dist/index');
+const express = require('express');
+const venom = require('venom-bot');
 
-try {
-  venom
-    .create({
-      session: 'sessionName_0001',
-      headless: false,
-      devtools: true,
-      useChrome: false,
-    })
-    .then((client) => start(client))
-    .catch(async (err) => {
-      console.log('Startup error: ' + err);
-    });
-} catch (e) {
-  console.log(e);
-}
+const app = express();
+app.use(express.json());
+const port = 3000;
 
-async function start(client) {
-  console.log('We have started');
-  console.log(await client.getWAVersion());
+venom.create({
+  session: 'apizap'
+})
+.then((client) => start(client))
+.catch((err) => {
+  console.log(err);
+});
 
-  const page = client.waPage;
-  const browser = page.browser();
-  const pid = browser.process().pid;
-
-  console.log(JSON.stringify(pid, null, 2));
-
-  console.log(await client.isLoggedIn());
-  const hostData = await client.getHost();
-  if(hostData && hostData.id) {
-    console.log(hostData.id);
-  }
-
-
-  let lastMessageId = "";
-
-  client.onAnyMessage((message) => {
-    if (lastMessageId === message.id) {
-      console.log('Duplicate message: ' + lastMessageId)
-    } else {
-      lastMessageId = message.id;
-      console.log(message);
-      console.log('New message: ' + message.id + ' ' + message.type);
-    }
-
-    if (message['isGroupMsg']) {
-      const ids = client
-        .getGroupMembers(message['chatId'], 1000)
-        .then((ids) => {
-          console.log(ids);
-        });
-    }
-  });
-
-  client.onStateChange((state) => {
-    console.log("State change: " + client.session);
-    console.log("State change: " + state);
-  })
-
-  client.onStreamChange((stream) => {
-    console.log("Stream change: " + client.session);
-    console.log("Stream change: " + stream);
-  })
-
-  client.onMessageEdit((message) => {
-    console.log('EDIT!');
-    console.log(message);
-  });
-
-  client.onMessageDelete((message) => {
-    console.log('DELETE!');
-    console.log(message);
-  });
-
-  client.onMessageEdit((message) => {
-    console.log('EDIT!');
-    console.log(message);
-  });
-
-  client.onMessageReaction((reaction) => {
-    console.log('REACTION!');
-    console.log(reaction);
+const start = (client) => {
+  app.post('/send-message', async (req, res) => {
+    const { to, message } = req.body;
+    await client.sendText(to + '@c.us', message);
+    res.json('Mensagem enviada');
   });
 }
+
+app.listen(port, () => {
+  console.log('Srv rodando na porta ' + port);
+});
